@@ -1,0 +1,15 @@
+{
+  "short_name": "15℃換算",
+  "name": "15℃換算計",
+  "display": "standalone",
+  "start_url": "index.html",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "background_color": "#ffffff",
+  "theme_color": "#000000"
+}
