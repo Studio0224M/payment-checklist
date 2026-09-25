@@ -4,19 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>スマホ支払いチェックリスト</title>
-<!-- ここからが追加された定型文です -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3b82f6">
-<link rel="apple-touch-icon" href="icon.png">
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="apple-touch-icon" href="icon.png">
 
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js');
-        });
-    }
-</script>
-<!-- ここまで -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js');
+            });
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -47,7 +46,6 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        /* Custom scrollbar hiding for smooth mobile feel */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -59,7 +57,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen pb-24 selection:bg-brand-500 selection:text-white">
 
-    <!-- App Container (Mobile viewport constrained for optimal phone view) -->
+    <!-- App Container -->
     <div class="max-w-md mx-auto min-h-screen bg-slate-50 shadow-xl flex flex-col relative">
 
         <!-- Header -->
@@ -74,9 +72,16 @@
                         <p class="text-xs text-indigo-200" id="current-month-display">2026年9月度</p>
                     </div>
                 </div>
-                <button id="btn-quick-add" onclick="openManualModal()" class="bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white p-2.5 rounded-full flex items-center justify-center shadow-sm" title="手動追加">
-                    <i class="fa-solid fa-plus text-base"></i>
-                </button>
+                <div class="flex items-center space-x-2">
+                    <!-- API Key Settings Button -->
+                    <button onclick="openSettingsModal()" class="bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white p-2.5 rounded-full flex items-center justify-center shadow-sm" title="設定">
+                        <i class="fa-solid fa-gear text-base"></i>
+                    </button>
+                    <!-- Quick Add Button -->
+                    <button id="btn-quick-add" onclick="openManualModal()" class="bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white p-2.5 rounded-full flex items-center justify-center shadow-sm" title="手動追加">
+                        <i class="fa-solid fa-plus text-base"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Summary Stats Card -->
@@ -97,7 +102,7 @@
         <!-- Main Content Area -->
         <main class="p-4 flex-1 space-y-4">
 
-            <!-- Camera / OCR Upload Banner -->
+            <!-- Camera / OCR Upload Banner (Sample Test Button Removed) -->
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-4 text-white shadow-lg relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 opacity-15 text-7xl font-black text-white pointer-events-none">
                     <i class="fa-solid fa-camera"></i>
@@ -109,19 +114,13 @@
                     </div>
                     <p class="text-xs text-indigo-100 mb-3 leading-relaxed">撮影・画像選択で金額や支払先、収納印（支払有無）を自動読み取り！</p>
                     
-                    <div class="flex gap-2">
-                        <!-- Camera capture input -->
-                        <label class="flex-1 bg-white text-indigo-700 hover:bg-indigo-50 active:scale-98 transition-all font-bold text-xs py-2.5 px-3 rounded-xl shadow-md cursor-pointer flex items-center justify-center space-x-1.5">
+                    <div>
+                        <!-- Full-width Camera capture input -->
+                        <label class="w-full bg-white text-indigo-700 hover:bg-indigo-50 active:scale-98 transition-all font-bold text-xs py-3 px-4 rounded-xl shadow-md cursor-pointer flex items-center justify-center space-x-2">
                             <i class="fa-solid fa-camera text-base text-indigo-600"></i>
                             <span>撮影・読み取り</span>
                             <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
                         </label>
-                        
-                        <!-- Test with sample invoice button -->
-                        <button onclick="loadSampleInvoice()" class="bg-indigo-800/80 hover:bg-indigo-900 border border-indigo-400/40 text-indigo-100 active:scale-98 transition-all font-medium text-xs px-3 rounded-xl flex items-center justify-center space-x-1" title="添付サンプル画像でAI判定テスト">
-                            <i class="fa-solid fa-vial text-amber-300"></i>
-                            <span>サンプル試用</span>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -151,6 +150,36 @@
 
         </main>
 
+        <!-- Settings Modal (Gemini API Key Setting) -->
+        <div id="settings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-key text-indigo-600"></i> APIキー設定
+                    </h3>
+                    <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="space-y-3">
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        請求書画像の自動読み取り（OCR）機能を利用するには、Gemini APIキーの保存が必要です。
+                    </p>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Gemini API Key</label>
+                        <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                        ※ APIキーはお使いのブラウザ内（Local Storage）にのみ保存されます。
+                    </p>
+                </div>
+                <div class="pt-2 flex gap-2">
+                    <button onclick="closeSettingsModal()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50">キャンセル</button>
+                    <button onclick="saveApiKey()" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all">保存</button>
+                </div>
+            </div>
+        </div>
+
         <!-- OCR Processing Overlay Modal -->
         <div id="ocr-loading-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
             <div class="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl space-y-4">
@@ -161,8 +190,8 @@
                     </div>
                 </div>
                 <div>
-                    <h3 class="font-bold text-slate-800 text-base">請求書を解析中...</h3>
-                    <p class="text-xs text-slate-500 mt-1">Gemini AIが項目、金額、収納印（支払状態）を読み取っています。</p>
+                    <h3 class="font-bold text-slate-800 text-base">画像を最適化＆解析中...</h3>
+                    <p class="text-xs text-slate-500 mt-1" id="ocr-loading-text">Gemini AIが項目、金額、収納印（支払状態）を読み取っています。</p>
                 </div>
             </div>
         </div>
@@ -183,23 +212,23 @@
                 <form id="payment-form" onsubmit="saveItem(event)" class="space-y-3">
                     <input type="hidden" id="form-id">
 
-                    <!-- Title Item (e.g. 9月テレビ代) -->
+                    <!-- Title Item (e.g. 10月 ガス代) -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">項目名 <span class="text-red-500">*</span></label>
-                        <input type="text" id="form-title" required placeholder="例: 9月テレビ代" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
+                        <input type="text" id="form-title" required placeholder="例: 10月 ガス代" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
                     </div>
 
                     <!-- Payee -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">支払先 <span class="text-red-500">*</span></label>
-                        <input type="text" id="form-payee" required placeholder="例: JCOMマーケティング株式会社" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
+                        <input type="text" id="form-payee" required placeholder="例: 伊丹産業株式会社" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
                     </div>
 
                     <!-- Amount & Due Date Grid -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">金額 (円) <span class="text-red-500">*</span></label>
-                            <input type="number" id="form-amount" required placeholder="2052" min="0" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
+                            <input type="number" id="form-amount" required placeholder="7839" min="0" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">支払期限 <span class="text-red-500">*</span></label>
@@ -211,6 +240,7 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">支払い方法</label>
                         <select id="form-method" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
+                            <option value="ゆうちょ銀行・郵便局">ゆうちょ銀行・郵便局</option>
                             <option value="コンビニ (CVS)">コンビニ (CVS)</option>
                             <option value="Pay-easy (ペイジー)">Pay-easy (ペイジー)</option>
                             <option value="クレジットカード">クレジットカード</option>
@@ -227,7 +257,7 @@
                             <input type="checkbox" id="form-is-paid" onchange="togglePaidDateVisibility()" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                             <div class="flex-1">
                                 <span class="text-xs font-bold text-slate-800 block">支払い済みとして記録</span>
-                                <span class="text-[11px] text-slate-500">収納印や領収書が確認できたらチェック</span>
+                                <span class="text-[11px] text-slate-500">領収印や日付印が確認できたらチェック</span>
                             </div>
                         </label>
                     </div>
@@ -248,9 +278,9 @@
         </div>
 
         <!-- Toast Notification -->
-        <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2.5 rounded-full text-xs font-medium shadow-xl flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none z-50">
-            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
-            <span id="toast-message">メッセージ</span>
+        <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2.5 rounded-full text-xs font-medium shadow-xl flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none z-50 max-w-[90vw]">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 flex-shrink-0"></i>
+            <span id="toast-message" class="truncate">メッセージ</span>
         </div>
 
     </div>
@@ -259,9 +289,6 @@
         // State Management
         let items = [];
         let currentFilter = 'all';
-
-        // Sample base64 image representation for testing (mimicking user's uploaded bill)
-        const SAMPLE_IMAGE_URL = 'スクリーンショット 2026-09-21 095123.jpg';
 
         // Initial Load
         window.addEventListener('DOMContentLoaded', () => {
@@ -280,29 +307,17 @@
                 }
             }
             
-            // If empty, populate with default sample from the user prompt image
             if (!items || items.length === 0) {
                 items = [
                     {
                         id: 'sample-1',
-                        title: '9月 テレビ代 (JCOM)',
-                        payee: 'JCOMマーケティング株式会社',
-                        amount: 2052,
-                        dueDate: '2026-09-30',
-                        isPaid: true,
-                        paidDate: '2026-09-19',
-                        paymentMethod: 'コンビニ (CVS)',
-                        createdAt: new Date().toISOString()
-                    },
-                    {
-                        id: 'sample-2',
-                        title: '9月 電気代',
-                        payee: '関西電力株式会社',
-                        amount: 6480,
-                        dueDate: '2026-09-28',
+                        title: '10月 ガス代',
+                        payee: '伊丹産業株式会社',
+                        amount: 7839,
+                        dueDate: '2026-10-10',
                         isPaid: false,
                         paidDate: null,
-                        paymentMethod: '口座振替',
+                        paymentMethod: 'ゆうちょ銀行・郵便局',
                         createdAt: new Date().toISOString()
                     }
                 ];
@@ -313,6 +328,24 @@
         // Save items to localStorage
         function saveToStorage() {
             localStorage.setItem('payment_checklist_items', JSON.stringify(items));
+        }
+
+        // Settings / API Key Management
+        function openSettingsModal() {
+            const currentKey = localStorage.getItem('gemini_api_key') || '';
+            document.getElementById('input-api-key').value = currentKey;
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('input-api-key').value.trim();
+            localStorage.setItem('gemini_api_key', key);
+            closeSettingsModal();
+            showToast(key ? 'APIキーを保存しました' : 'APIキーを消去しました');
         }
 
         // Filter Logic
@@ -351,20 +384,17 @@
             const emptyState = document.getElementById('empty-state');
             container.innerHTML = '';
 
-            // Filter items
             let filteredItems = items.filter(item => {
                 if (currentFilter === 'unpaid') return !item.isPaid;
                 if (currentFilter === 'paid') return item.isPaid;
                 return true;
             });
 
-            // Sort: Unpaid first (sorted by due date asc), then Paid (sorted by paid date desc)
             filteredItems.sort((a, b) => {
                 if (a.isPaid !== b.isPaid) return a.isPaid ? 1 : -1;
                 return new Date(a.dueDate) - new Date(b.dueDate);
             });
 
-            // Update Statistics
             let unpaidTotal = 0, unpaidCount = 0;
             let paidTotal = 0, paidCount = 0;
 
@@ -403,7 +433,6 @@
 
                 card.innerHTML = `
                     <div class="flex items-start space-x-3">
-                        <!-- Custom Touch-friendly Checkbox -->
                         <button onclick="togglePaidStatus('${item.id}', event)" class="mt-0.5 flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center transition-all ${
                             item.isPaid 
                                 ? 'bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-200' 
@@ -412,7 +441,6 @@
                             ${item.isPaid ? '<i class="fa-solid fa-check text-sm font-bold"></i>' : ''}
                         </button>
 
-                        <!-- Details -->
                         <div class="flex-1 min-w-0" onclick="openEditModal('${item.id}')">
                             <div class="flex items-center justify-between">
                                 <h3 class="text-sm font-bold text-slate-800 truncate ${item.isPaid ? 'line-through text-slate-400' : ''}">
@@ -428,12 +456,10 @@
                             </p>
 
                             <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
-                                <!-- Payment Method Badge -->
                                 <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">
                                     ${escapeHtml(item.paymentMethod || '支払方法未設定')}
                                 </span>
 
-                                <!-- Status & Date Badge -->
                                 ${item.isPaid ? `
                                     <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1">
                                         <i class="fa-solid fa-circle-check"></i> ${item.paidDate ? formatDate(item.paidDate) + '済' : '支払い済み'}
@@ -450,7 +476,6 @@
                             </div>
                         </div>
 
-                        <!-- Options Dropdown/Delete Button -->
                         <button onclick="deleteItem('${item.id}', event)" class="text-slate-300 hover:text-red-500 p-1.5 rounded-lg transition-colors text-xs" title="削除">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
@@ -461,75 +486,100 @@
             });
         }
 
+        // Image Resizing & Compression for Mobile Performance
+        function processAndCompressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1280;
+                        const MAX_HEIGHT = 1280;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height = Math.round(height * (MAX_WIDTH / width));
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width = Math.round(width * (MAX_HEIGHT / height));
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Export as JPEG with 0.8 quality
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        const base64Data = dataUrl.split(',')[1];
+                        resolve({ base64Data, mimeType: 'image/jpeg' });
+                    };
+                    img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+                reader.readAsDataURL(file);
+            });
+        }
+
         // Handle User Image Upload (Camera or File)
         async function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            showOcrLoading(true);
+            const apiKey = localStorage.getItem('gemini_api_key');
+            if (!apiKey) {
+                openSettingsModal();
+                showToast('AI読み取りにはGemini APIキーの設定が必要です', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            showOcrLoading(true, '画像を最適化中...');
 
             try {
-                // Convert file to Base64
-                const base64Data = await fileToBase64(file);
-                const result = await callGeminiOCR(base64Data, file.type);
+                // Compress & convert file
+                const { base64Data, mimeType } = await processAndCompressImage(file);
+                
+                showOcrLoading(true, 'Gemini AIで請求書を解析中...');
+                const result = await callGeminiOCR(base64Data, mimeType, apiKey);
                 showOcrLoading(false);
 
                 if (result) {
                     openModalWithOcrResult(result);
-                } else {
-                    showToast('画像の解析に失敗しました。手動で入力してください。', 'error');
                 }
             } catch (err) {
                 console.error(err);
                 showOcrLoading(false);
-                showToast('エラーが発生しました', 'error');
+                showToast(err.message || '読み取りエラーが発生しました', 'error');
             }
 
             // Reset input
             event.target.value = '';
         }
 
-        // Sample invoice testing directly with prompt provided sample context
-        async function loadSampleInvoice() {
-            showOcrLoading(true);
-            
-            // Simulating image OCR processing for the sample bill provided in user's prompt
-            setTimeout(() => {
-                showOcrLoading(false);
-                
-                // OCR parsed result from user's attached invoice:
-                // 2026年9月, JCOMマーケティング株式会社, 2,052円, 2026年9月30日, 収納印 9/19
-                const sampleResult = {
-                    title: '9月 テレビ代 (JCOM)',
-                    payee: 'JCOMマーケティング株式会社',
-                    amount: 2052,
-                    dueDate: '2026-09-30',
-                    isPaid: true,
-                    paidDate: '2026-09-19',
-                    paymentMethod: 'コンビニ (CVS)'
-                };
+        // Call Gemini API for Multimodal OCR
+        async function callGeminiOCR(base64Data, mimeType, apiKey) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-                openModalWithOcrResult(sampleResult);
-                showToast('サンプル画像のOCR判定が完了しました');
-            }, 1200);
-        }
-
-        // Call Gemini 3 Flash Preview API for Multimodal OCR
-        async function callGeminiOCR(base64Data, mimeType) {
-            const apiKey = ""; // Automatic runtime insertion in Canvas
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-            const systemPrompt = `あなたは請求書や払込通帳・払込取扱票の画像から、支払い用管理データを正確に読み取るAIです。
+            const systemPrompt = `あなたは請求書や払込請求書・払込取扱票の画像から、支払い用管理データを正確に読み取るAIです。
 以下のルールに従って情報を取り出し、JSON形式でのみ出力してください。
 
 1. 氏名（個人名など）は絶対に含めないでください。
-2. title: ご請求月（例: 2026年9月）とサービス/受取人（例: JCOM）から「〇月 テレビ代」や「9月 JCOM利用料」のような簡潔な項目名を付けてください。
-3. payee: 受取人または支払先企業名（例: JCOMマーケティング株式会社）
-4. amount: ご請求金額（カンマを除いた半角数値。例: 2052）
-5. dueDate: お支払い期限（YYYY-MM-DD形式。例: 2026-09-30）
-6. isPaid: 画像内に「収納印」「領収印」「受領スタンプ」または手書きの日付メモ（例: 「9/19」や「領収」）が存在する場合は true、何も印や書き込みがない場合は false にしてください。
-7. paidDate: 収納印等から読み取れる日付（YYYY-MM-DD形式）。請求月が2026年9月で手書きが「9/19」なら「2026-09-19」。判別不可なら null。
-8. paymentMethod: 支払用紙のタイプ（コンビニ (CVS), Pay-easy (ペイジー), 銀行振込 など）`;
+2. title: 発行元・サービス種別から簡潔な項目名を指定してください（例: 支払期限が10月なら「10月 ガス代」、「9月 電気代」など）。
+3. payee: 支払先企業名（例: 「伊丹産業株式会社」）
+4. amount: ご請求金額（カンマを除いた半角数値。例: 7839）
+5. dueDate: お支払い期限（YYYY-MM-DD形式。例: 2026-10-10）
+6. isPaid: 「日付印」「受領印」「収納印」が押されている場合は true、何も押されていない場合は false にしてください。
+7. paidDate: 受領印等から読み取れる日付（YYYY-MM-DD形式）。判別不可または未払いの場合は null。
+8. paymentMethod: 支払用紙の指定機関（ゆうちょ銀行・郵便局, コンビニ (CVS), Pay-easy (ペイジー) など）`;
 
             const payload = {
                 contents: [
@@ -561,17 +611,25 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                if (!response.ok) {
+                    if (response.status === 400 || response.status === 403) {
+                        throw new Error('APIキーが無効または設定に誤りがあります');
+                    } else {
+                        throw new Error(`通信エラー (${response.status})`);
+                    }
+                }
 
                 const data = await response.json();
                 const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (jsonText) {
                     return JSON.parse(jsonText);
+                } else {
+                    throw new Error('解析結果が得られませんでした');
                 }
             } catch (e) {
                 console.error("Gemini API OCR failed:", e);
+                throw e;
             }
-            return null;
         }
 
         // Form & Modal Management
@@ -581,7 +639,6 @@
             document.getElementById('payment-form').reset();
             document.getElementById('form-id').value = '';
             
-            // Set default due date to end of current month
             const today = new Date();
             const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
             document.getElementById('form-due-date').value = lastDay.toISOString().split('T')[0];
@@ -599,7 +656,7 @@
             document.getElementById('form-payee').value = ocrData.payee || '';
             document.getElementById('form-amount').value = ocrData.amount || '';
             document.getElementById('form-due-date').value = ocrData.dueDate || '';
-            document.getElementById('form-method').value = ocrData.paymentMethod || 'コンビニ (CVS)';
+            document.getElementById('form-method').value = ocrData.paymentMethod || 'ゆうちょ銀行・郵便局';
             
             const isPaidCheckbox = document.getElementById('form-is-paid');
             isPaidCheckbox.checked = !!ocrData.isPaid;
@@ -627,7 +684,7 @@
             document.getElementById('form-payee').value = item.payee;
             document.getElementById('form-amount').value = item.amount;
             document.getElementById('form-due-date').value = item.dueDate;
-            document.getElementById('form-method').value = item.paymentMethod || 'コンビニ (CVS)';
+            document.getElementById('form-method').value = item.paymentMethod || 'ゆうちょ銀行・郵便局';
             document.getElementById('form-is-paid').checked = item.isPaid;
             document.getElementById('form-paid-date').value = item.paidDate || '';
 
@@ -666,14 +723,12 @@
             const paidDate = isPaid ? document.getElementById('form-paid-date').value : null;
 
             if (id) {
-                // Update existing
                 const index = items.findIndex(i => i.id === id);
                 if (index !== -1) {
                     items[index] = { ...items[index], title, payee, amount, dueDate, paymentMethod, isPaid, paidDate };
                 }
                 showToast('項目を更新しました');
             } else {
-                // Create new
                 const newItem = {
                     id: 'item-' + Date.now(),
                     title,
@@ -706,22 +761,15 @@
         }
 
         // Helper Functions
-        function showOcrLoading(show) {
+        function showOcrLoading(show, message = '請求書を解析中...') {
             const modal = document.getElementById('ocr-loading-modal');
-            if (show) modal.classList.remove('hidden');
-            else modal.classList.add('hidden');
-        }
-
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const base64 = reader.result.split(',')[1];
-                    resolve(base64);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
+            const textElem = document.getElementById('ocr-loading-text');
+            if (show) {
+                if (textElem) textElem.textContent = message;
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
         }
 
         function formatDate(dateStr) {
@@ -750,15 +798,15 @@
 
             message.textContent = msg;
             if (type === 'error') {
-                icon.className = 'fa-solid fa-circle-exclamation text-red-400';
+                icon.className = 'fa-solid fa-circle-exclamation text-red-400 flex-shrink-0';
             } else {
-                icon.className = 'fa-solid fa-circle-check text-emerald-400';
+                icon.className = 'fa-solid fa-circle-check text-emerald-400 flex-shrink-0';
             }
 
             toast.classList.remove('opacity-0', 'pointer-events-none');
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'pointer-events-none');
-            }, 2500);
+            }, 3000);
         }
     </script>
 </body>
