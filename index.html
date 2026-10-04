@@ -57,7 +57,6 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen pb-24 selection:bg-brand-500 selection:text-white">
 
-    <!-- App Container -->
     <div class="max-w-md mx-auto min-h-screen bg-slate-50 shadow-xl flex flex-col relative">
 
         <!-- Header -->
@@ -69,7 +68,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg font-bold leading-tight">支払いチェックリスト</h1>
-                        <p class="text-xs text-indigo-200" id="current-month-display">2026年9月度</p>
+                        <p class="text-xs text-indigo-200" id="current-month-display">2026年10月度</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
@@ -99,10 +98,9 @@
             </div>
         </header>
 
-        <!-- Main Content Area -->
         <main class="p-4 flex-1 space-y-4">
 
-            <!-- Camera / OCR Upload Banner (Sample Test Button Removed) -->
+            <!-- Camera / OCR Upload Banner -->
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-4 text-white shadow-lg relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 opacity-15 text-7xl font-black text-white pointer-events-none">
                     <i class="fa-solid fa-camera"></i>
@@ -125,12 +123,12 @@
                 </div>
             </div>
 
-            <!-- Filter and Controls -->
+            <!-- Filter Controls -->
             <div class="flex items-center justify-between pt-1">
                 <div class="flex bg-slate-200/80 p-1 rounded-xl text-xs font-semibold text-slate-600 w-full">
-                    <button id="filter-all" onclick="setFilter('all')" class="flex-1 py-1.5 rounded-lg text-center transition-all bg-white text-indigo-700 shadow-sm">すべて</button>
-                    <button id="filter-unpaid" onclick="setFilter('unpaid')" class="flex-1 py-1.5 rounded-lg text-center transition-all">未払い</button>
-                    <button id="filter-paid" onclick="setFilter('paid')" class="flex-1 py-1.5 rounded-lg text-center transition-all">支払い済み</button>
+                    <button id="filter-all" onclick="setFilter('all')" class="flex-1 py-1.5 rounded-lg text-center transition-all bg-white text-indigo-700 shadow-sm font-bold">すべて</button>
+                    <button id="filter-unpaid" onclick="setFilter('unpaid')" class="flex-1 py-1.5 rounded-lg text-center transition-all text-slate-500 hover:text-slate-800">未払い</button>
+                    <button id="filter-paid" onclick="setFilter('paid')" class="flex-1 py-1.5 rounded-lg text-center transition-all text-slate-500 hover:text-slate-800">支払い済み</button>
                 </div>
             </div>
 
@@ -196,7 +194,7 @@
             </div>
         </div>
 
-        <!-- Add/Edit Modal -->
+        <!-- Add/Edit Modal (With Memo Field Added) -->
         <div id="item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
             <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -251,8 +249,14 @@
                         </select>
                     </div>
 
+                    <!-- Memo / Note Field -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">メモ・備考（任意）</label>
+                        <textarea id="form-memo" rows="2" placeholder="例: お客様番号 1234-5678、口座振替日、特記事項など" class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 resize-none"></textarea>
+                    </div>
+
                     <!-- Payment Status Checkbox -->
-                    <div class="pt-2">
+                    <div class="pt-1">
                         <label class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-all">
                             <input type="checkbox" id="form-is-paid" onchange="togglePaidDateVisibility()" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                             <div class="flex-1">
@@ -318,6 +322,7 @@
                         isPaid: false,
                         paidDate: null,
                         paymentMethod: 'ゆうちょ銀行・郵便局',
+                        memo: 'お客様番号: 9876-5432\n振込用紙はリビング棚に保管',
                         createdAt: new Date().toISOString()
                     }
                 ];
@@ -441,7 +446,7 @@
                             ${item.isPaid ? '<i class="fa-solid fa-check text-sm font-bold"></i>' : ''}
                         </button>
 
-                        <div class="flex-1 min-w-0" onclick="openEditModal('${item.id}')">
+                        <div class="flex-1 min-w-0 cursor-pointer" onclick="openEditModal('${item.id}')">
                             <div class="flex items-center justify-between">
                                 <h3 class="text-sm font-bold text-slate-800 truncate ${item.isPaid ? 'line-through text-slate-400' : ''}">
                                     ${escapeHtml(item.title)}
@@ -474,6 +479,13 @@
                                     </span>
                                 `}
                             </div>
+
+                            ${item.memo ? `
+                                <div class="mt-2 text-xs text-slate-600 bg-slate-100/80 p-2 rounded-xl border border-slate-200/60 flex items-start space-x-1.5">
+                                    <i class="fa-regular fa-note-sticky text-indigo-500 mt-0.5 text-[11px] flex-shrink-0"></i>
+                                    <span class="whitespace-pre-line text-[11px] leading-snug break-all">${escapeHtml(item.memo)}</span>
+                                </div>
+                            ` : ''}
                         </div>
 
                         <button onclick="deleteItem('${item.id}', event)" class="text-slate-300 hover:text-red-500 p-1.5 rounded-lg transition-colors text-xs" title="削除">
@@ -516,7 +528,6 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        // Export as JPEG with 0.8 quality
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                         const base64Data = dataUrl.split(',')[1];
                         resolve({ base64Data, mimeType: 'image/jpeg' });
@@ -545,7 +556,6 @@
             showOcrLoading(true, '画像を最適化中...');
 
             try {
-                // Compress & convert file
                 const { base64Data, mimeType } = await processAndCompressImage(file);
                 
                 showOcrLoading(true, 'Gemini AIで請求書を解析中...');
@@ -561,7 +571,6 @@
                 showToast(err.message || '読み取りエラーが発生しました', 'error');
             }
 
-            // Reset input
             event.target.value = '';
         }
 
@@ -579,7 +588,8 @@
 5. dueDate: お支払い期限（YYYY-MM-DD形式。例: 2026-10-10）
 6. isPaid: 「日付印」「受領印」「収納印」が押されている場合は true、何も押されていない場合は false にしてください。
 7. paidDate: 受領印等から読み取れる日付（YYYY-MM-DD形式）。判別不可または未払いの場合は null。
-8. paymentMethod: 支払用紙の指定機関（ゆうちょ銀行・郵便局, コンビニ (CVS), Pay-easy (ペイジー) など）`;
+8. paymentMethod: 支払用紙の指定機関（ゆうちょ銀行・郵便局, コンビニ (CVS), Pay-easy (ペイジー) など）
+9. memo: お客様番号・お問合せ番号や備考特記事項があれば簡潔に記載（該当なしの場合は空文字列""）`;
 
             const payload = {
                 contents: [
@@ -638,6 +648,7 @@
             document.getElementById('modal-title').textContent = '支払項目を手動追加';
             document.getElementById('payment-form').reset();
             document.getElementById('form-id').value = '';
+            document.getElementById('form-memo').value = '';
             
             const today = new Date();
             const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -657,6 +668,7 @@
             document.getElementById('form-amount').value = ocrData.amount || '';
             document.getElementById('form-due-date').value = ocrData.dueDate || '';
             document.getElementById('form-method').value = ocrData.paymentMethod || 'ゆうちょ銀行・郵便局';
+            document.getElementById('form-memo').value = ocrData.memo || '';
             
             const isPaidCheckbox = document.getElementById('form-is-paid');
             isPaidCheckbox.checked = !!ocrData.isPaid;
@@ -685,6 +697,7 @@
             document.getElementById('form-amount').value = item.amount;
             document.getElementById('form-due-date').value = item.dueDate;
             document.getElementById('form-method').value = item.paymentMethod || 'ゆうちょ銀行・郵便局';
+            document.getElementById('form-memo').value = item.memo || '';
             document.getElementById('form-is-paid').checked = item.isPaid;
             document.getElementById('form-paid-date').value = item.paidDate || '';
 
@@ -719,13 +732,14 @@
             const amount = Number(document.getElementById('form-amount').value);
             const dueDate = document.getElementById('form-due-date').value;
             const paymentMethod = document.getElementById('form-method').value;
+            const memo = document.getElementById('form-memo').value.trim();
             const isPaid = document.getElementById('form-is-paid').checked;
             const paidDate = isPaid ? document.getElementById('form-paid-date').value : null;
 
             if (id) {
                 const index = items.findIndex(i => i.id === id);
                 if (index !== -1) {
-                    items[index] = { ...items[index], title, payee, amount, dueDate, paymentMethod, isPaid, paidDate };
+                    items[index] = { ...items[index], title, payee, amount, dueDate, paymentMethod, memo, isPaid, paidDate };
                 }
                 showToast('項目を更新しました');
             } else {
@@ -736,6 +750,7 @@
                     amount,
                     dueDate,
                     paymentMethod,
+                    memo,
                     isPaid,
                     paidDate,
                     createdAt: new Date().toISOString()
