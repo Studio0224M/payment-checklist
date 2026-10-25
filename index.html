@@ -247,7 +247,7 @@
                     <!-- Payment Method -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">支払い方法</label>
-                        <select id="form-method" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
+                        <select id="form-method" onchange="toggleBankNameVisibility()" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
                             <option value="ゆうちょ銀行・郵便局">ゆうちょ銀行・郵便局</option>
                             <option value="コンビニ (CVS)">コンビニ (CVS)</option>
                             <option value="Pay-easy (ペイジー)">Pay-easy (ペイジー)</option>
@@ -257,6 +257,12 @@
                             <option value="スマホ決済 (PayPay等)">スマホ決済 (PayPay等)</option>
                             <option value="その他">その他</option>
                         </select>
+                    </div>
+
+                    <!-- Bank Name Field (Shown only for 口座振替) -->
+                    <div id="bank-name-container" class="hidden">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">引き落とし銀行名・金融機関名（任意）</label>
+                        <input type="text" id="form-bank-name" placeholder="例: 三井住友銀行、〇〇信用金庫" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50">
                     </div>
 
                     <!-- Memo / Note Field -->
@@ -480,7 +486,7 @@
 
                             <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
                                 <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">
-                                    ${escapeHtml(item.paymentMethod || '支払方法未設定')}
+                                    ${escapeHtml(item.paymentMethod || '支払方法未設定')}${item.bankName ? ' (' + escapeHtml(item.bankName) + ')' : ''}
                                 </span>
 
                                 ${item.isPaid ? `
@@ -607,8 +613,8 @@
 6. isPaid: 「日付印」「受領印」「収納印」が押されている場合は true、何も押されていない場合は false にしてください。
 7. paidDate: 受領印等から読み取れる日付（YYYY-MM-DD形式）。判別不可または未払いの場合は null。
 8. paymentMethod: 支払用紙の指定機関（ゆうちょ銀行・郵便局, コンビニ (CVS), Pay-easy (ペイジー) など）
-9. memo: お客様番号・お問合せ番号や備考特記事項があれば簡潔に記載（該当なしの場合は空文字列""）`;
-
+9. bankName: 振込先銀行名や指定金融機関名があれば記載（該当なしの場合は空文字列""）
+10. memo: お客様番号・お問合せ番号や備考特記事項があれば簡潔に記載（該当なしの場合は空文字列""）`;
             const payload = {
                 contents: [
                     {
@@ -667,6 +673,7 @@
             document.getElementById('btn-duplicate-next-month').classList.add('hidden');
             document.getElementById('payment-form').reset();
             document.getElementById('form-id').value = '';
+            document.getElementById('form-bank-name').value = '';
             document.getElementById('form-memo').value = '';
             
             const today = new Date();
@@ -674,6 +681,7 @@
             document.getElementById('form-due-date').value = lastDay.toISOString().split('T')[0];
             
             togglePaidDateVisibility();
+            toggleBankNameVisibility();
             document.getElementById('item-modal').classList.remove('hidden');
         }
 
@@ -688,6 +696,7 @@
             document.getElementById('form-amount').value = ocrData.amount || '';
             document.getElementById('form-due-date').value = ocrData.dueDate || '';
             document.getElementById('form-method').value = ocrData.paymentMethod || 'ゆうちょ銀行・郵便局';
+            document.getElementById('form-bank-name').value = ocrData.bankName || '';
             document.getElementById('form-memo').value = ocrData.memo || '';
             
             const isPaidCheckbox = document.getElementById('form-is-paid');
@@ -701,6 +710,7 @@
             }
 
             togglePaidDateVisibility();
+            toggleBankNameVisibility();
             document.getElementById('item-modal').classList.remove('hidden');
         }
 
@@ -718,16 +728,28 @@
             document.getElementById('form-amount').value = item.amount;
             document.getElementById('form-due-date').value = item.dueDate;
             document.getElementById('form-method').value = item.paymentMethod || 'ゆうちょ銀行・郵便局';
+            document.getElementById('form-bank-name').value = item.bankName || '';
             document.getElementById('form-memo').value = item.memo || '';
             document.getElementById('form-is-paid').checked = item.isPaid;
             document.getElementById('form-paid-date').value = item.paidDate || '';
 
             togglePaidDateVisibility();
+            toggleBankNameVisibility();
             document.getElementById('item-modal').classList.remove('hidden');
         }
 
         function closeModal() {
             document.getElementById('item-modal').classList.add('hidden');
+        }
+
+        function toggleBankNameVisibility() {
+            const method = document.getElementById('form-method').value;
+            const container = document.getElementById('bank-name-container');
+            if (method === '口座振替') {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
         }
 
         function togglePaidDateVisibility() {
@@ -796,6 +818,7 @@
                 amount: originalItem.amount,
                 dueDate: newDueDate,
                 paymentMethod: originalItem.paymentMethod,
+                bankName: originalItem.bankName || '',
                 memo: originalItem.memo,
                 isPaid: false, // Reset payment status
                 paidDate: null, // Clear paid date
@@ -822,6 +845,7 @@
             const amount = Number(document.getElementById('form-amount').value);
             const dueDate = document.getElementById('form-due-date').value;
             const paymentMethod = document.getElementById('form-method').value;
+            const bankName = document.getElementById('form-bank-name').value.trim();
             const memo = document.getElementById('form-memo').value.trim();
             const isPaid = document.getElementById('form-is-paid').checked;
             const paidDate = isPaid ? document.getElementById('form-paid-date').value : null;
@@ -829,7 +853,7 @@
             if (id) {
                 const index = items.findIndex(i => i.id === id);
                 if (index !== -1) {
-                    items[index] = { ...items[index], title, payee, amount, dueDate, paymentMethod, memo, isPaid, paidDate };
+                    items[index] = { ...items[index], title, payee, amount, dueDate, paymentMethod, bankName, memo, isPaid, paidDate };
                 }
                 showToast('項目を更新しました');
             } else {
@@ -840,6 +864,7 @@
                     amount,
                     dueDate,
                     paymentMethod,
+                    bankName,
                     memo,
                     isPaid,
                     paidDate,
