@@ -204,7 +204,7 @@
             </div>
         </div>
 
-        <!-- Add/Edit Modal (With Memo Field Added) -->
+        <!-- Add/Edit Modal (With Memo Field Added & Duplicate Action) -->
         <div id="item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
             <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -283,9 +283,17 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="pt-3 flex gap-2">
-                        <button type="button" onclick="closeModal()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50">キャンセル</button>
-                        <button type="submit" class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all">保存する</button>
+                    <div class="pt-3 space-y-2">
+                        <!-- Copy Next Month Button (Visible only when editing an existing item) -->
+                        <button type="button" id="btn-duplicate-next-month" onclick="duplicateForNextMonth()" class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200/70 transition-all flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-clone text-sm"></i>
+                            <span>翌月分としてコピー作成</span>
+                        </button>
+
+                        <div class="flex gap-2">
+                            <button type="button" onclick="closeModal()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50">キャンセル</button>
+                            <button type="submit" class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all">保存する</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -656,6 +664,7 @@
         function openManualModal() {
             document.getElementById('modal-badge-ocr').classList.add('hidden');
             document.getElementById('modal-title').textContent = '支払項目を手動追加';
+            document.getElementById('btn-duplicate-next-month').classList.add('hidden');
             document.getElementById('payment-form').reset();
             document.getElementById('form-id').value = '';
             document.getElementById('form-memo').value = '';
@@ -671,6 +680,7 @@
         function openModalWithOcrResult(ocrData) {
             document.getElementById('modal-badge-ocr').classList.remove('hidden');
             document.getElementById('modal-title').textContent = 'OCR読み取り結果の確認';
+            document.getElementById('btn-duplicate-next-month').classList.add('hidden');
             document.getElementById('form-id').value = '';
 
             document.getElementById('form-title').value = ocrData.title || '';
@@ -700,6 +710,7 @@
 
             document.getElementById('modal-badge-ocr').classList.add('hidden');
             document.getElementById('modal-title').textContent = '支払項目の編集';
+            document.getElementById('btn-duplicate-next-month').classList.remove('hidden');
             
             document.getElementById('form-id').value = item.id;
             document.getElementById('form-title').value = item.title;
@@ -730,6 +741,75 @@
             } else {
                 container.classList.add('hidden');
             }
+        }
+
+        // Increment Month Helper (Advances YYYY-MM-DD or Month strings like "10月" by 1 month)
+        function incrementMonthInTitle(title) {
+            // Match pattern like "10月" or "10月度" or "10月分"
+            return title.replace(/(\d{1,2})(月)/g, (match, monthNum, suffix) => {
+                let m = parseInt(monthNum, 10);
+                let nextMonth = (m % 12) + 1;
+                return `${nextMonth}${suffix}`;
+            });
+        }
+
+        function addOneMonthToDate(dateString) {
+            if (!dateString) return '';
+            const parts = dateString.split('-');
+            if (parts.length !== 3) return dateString;
+
+            let year = parseInt(parts[0], 10);
+            let month = parseInt(parts[1], 10) - 1; // 0-indexed
+            let day = parseInt(parts[2], 10);
+
+            // Set to 1st of current month first to avoid month overflow issues (e.g., Jan 31 -> Feb 28)
+            let date = new Date(year, month, 1);
+            date.setMonth(date.getMonth() + 1);
+
+            // Handle end of month boundary
+            const maxDaysInNextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            const targetDay = Math.min(day, maxDaysInNextMonth);
+            date.setDate(targetDay);
+
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        // Duplicate item for next month
+        function duplicateForNextMonth() {
+            const id = document.getElementById('form-id').value;
+            const originalItem = items.find(i => i.id === id);
+
+            if (!originalItem) return;
+
+            // Calculate next month's values
+            const newTitle = incrementMonthInTitle(originalItem.title);
+            const newDueDate = addOneMonthToDate(originalItem.dueDate);
+
+            const newItem = {
+                id: 'item-' + Date.now(),
+                title: newTitle,
+                payee: originalItem.payee,
+                amount: originalItem.amount,
+                dueDate: newDueDate,
+                paymentMethod: originalItem.paymentMethod,
+                memo: originalItem.memo,
+                isPaid: false, // Reset payment status
+                paidDate: null, // Clear paid date
+                createdAt: new Date().toISOString()
+            };
+
+            // Add the new item
+            items.unshift(newItem);
+            saveToStorage();
+            render();
+
+            // Close current edit modal and notify user
+            closeModal();
+            showToast(`翌月分の「${newTitle}」を作成しました`);
         }
 
         // Save Item Form Submission
@@ -778,7 +858,7 @@
         function deleteItem(id, event) {
             if (event) event.stopPropagation();
             if (confirm('この支払い項目を削除してもよろしいですか？')) {
-                items = items.filter(i => i.id !== id);
+                items = items.filter(i => i.id === id);
                 saveToStorage();
                 render();
                 showToast('削除しました');
