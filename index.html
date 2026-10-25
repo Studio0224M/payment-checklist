@@ -858,7 +858,7 @@
         function deleteItem(id, event) {
             if (event) event.stopPropagation();
             if (confirm('この支払い項目を削除してもよろしいですか？')) {
-                items = items.filter(i => i.id === id);
+                items = items.filter(i => i.id !== id);
                 saveToStorage();
                 render();
                 showToast('削除しました');
